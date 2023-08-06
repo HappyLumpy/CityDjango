@@ -1,0 +1,19 @@
+<!DOCTYPE HTML>
+  <form method="POST">
+      {% csrf_token %}
+
+
+  <div class="form-group">
+                    <label for="address">Введите адрес</label>
+                    <input type="text" name="address" class="form-control" id="address" required>
+                </div>
+  <button type="submit" class="btn btn-primary">Готово</button>
+    </form>
+<title>City</title>
+<div id="demoMap" style="height:800px"></div>
+<script src="http://www.openlayers.org/api/OpenLayers.js"></script>
+<script>
+    map = new OpenLayers.Map("demoMap");
+    map.addLayer(new OpenLayers.Layer.OSM());
+    map.zoomToMaxExtent();
+</script>

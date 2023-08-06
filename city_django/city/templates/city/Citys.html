@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<a href="{% url 'api:DaData' %}">
+      <button type="submit" class="btn btn-primary">Попробовать еще раз</button>
+         </a>
+<head>
+    <title>City</title>
+<meta name="description" content="Display popup on features">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/openlayers/4.6.5/ol.css"></link>
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/openlayers/4.6.5/ol.js"></script>
+  <script>
+  var straitSource;
+    var map;
+  </script>
+
+</head>
+
+<body>
+ <div id="map" style="height:800px"></div>
+</body>
+
+<script>
+content = document.getElementById('popup-content');
+var center = ol.proj.transform({{ coordinate_list }}[0], 'EPSG:4326', 'EPSG:3857'); //initial position of map
+    var view = new ol.View({
+        center: center,
+        zoom: 5
+    });
+
+//raster layer on map
+   var OSMBaseLayer = new ol.layer.Tile({
+        source: new ol.source.OSM()
+    });
+
+ straitSource = new ol.source.Vector({ wrapX: true });
+    var straitsLayer = new ol.layer.Vector({
+        source: straitSource
+    });
+
+ map = new ol.Map({
+        layers: [OSMBaseLayer, straitsLayer],
+        target: 'map',
+        view: view,
+        controls: [new ol.control.FullScreen(), new ol.control.Zoom()]
+    });
+var data= {{ coordinate_list }}
+function addPointGeom(data) {
+        data.forEach(function(item) {
+            var longitude = item[0],
+                latitude = item[1],
+                iconFeature = new ol.Feature({
+                    geometry: new ol.geom.Point(ol.proj.transform([longitude, latitude], 'EPSG:4326',
+                        'EPSG:3857')),
+                  type: 'Point',
+                    desc: '<pre> <b>Waypoint Details </b> ' + '<br>' + 'Latitude : ' + latitude + '<br>Longitude: ' + longitude + '</pre>'}),
+                iconStyle = new ol.style.Style({
+                    image: new ol.style.Circle({
+                        radius: 5,
+                        stroke: new ol.style.Stroke({
+                            color: 'blue'
+                        }),
+                        fill: new ol.style.Fill({
+                            color: [57, 228, 193, 0.84]
+                        }),
+                    })
+                });
+
+            iconFeature.setStyle(iconStyle);
+
+            straitSource.addFeature(iconFeature);
+        });
+    }// End of function showStraits()
+
+addPointGeom(data);
+
+</script>
+
+</html>

@@ -1,0 +1,33 @@
+<html><body>
+<form method="POST">
+      {% csrf_token %}
+  <div class="form-group">
+                    <label for="distance">Введите радиус поиска ближайших адресов</label>
+                    <input type="number" name="distance" class="form-control" id="distance" required>
+                </div>
+  <button type="submit" class="btn btn-primary">Готово</button>
+    </form>
+<title>City</title>
+  <div id="mapdiv" style="height:800px"></div>
+  <script src="http://www.openlayers.org/api/OpenLayers.js"></script>
+  <script>
+    map = new OpenLayers.Map("mapdiv");
+    map.addLayer(new OpenLayers.Layer.OSM());
+     var longitude = {{geo_lon}};
+     latitude = {{geo_lat}};
+    var lonLat = new OpenLayers.LonLat( longitude, latitude )
+          .transform(
+            new OpenLayers.Projection("EPSG:4326"),
+            map.getProjectionObject()
+          );
+
+    var zoom=16;
+
+    var markers = new OpenLayers.Layer.Markers( "Markers" );
+    map.addLayer(markers);
+
+    markers.addMarker(new OpenLayers.Marker(lonLat));
+
+    map.setCenter (lonLat, zoom);
+  </script>
+</body></html>

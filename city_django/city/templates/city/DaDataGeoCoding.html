@@ -1,33 +1,101 @@
 <html><body>
 <form method="POST">
       {% csrf_token %}
-  <div class="form-group">
-                    <label for="distance">Введите радиус поиска ближайших адресов</label>
-                    <input type="number" name="distance" class="form-control" id="distance" required>
+      <div class="form-group">
+                    <label for="address">Введите адрес</label>
+                    <input type="text" name="address" class="form-control" id="address" required>
                 </div>
+  <div class="form-group">
+                    <label for="distance">Введите радиус поиска ближайших городов</label>
+                    <input type="number" name="distance" class="form-control" id="distance">
+                </div>
+               {% if error %}
+                    <div id="er">
+    <div id="popup">
+    <p style="cursor: pointer; color: red" onclick="document.getElementById('er').style.display='none';" >{{ error }}</p>
+    </div>
+</div>
+
+                </div>
+                {% endif %}
   <button type="submit" class="btn btn-primary">Готово</button>
     </form>
 <title>City</title>
-  <div id="mapdiv" style="height:800px"></div>
+  <div id="mapdiv" style="height:600px"></div>
   <script src="http://www.openlayers.org/api/OpenLayers.js"></script>
   <script>
+  var check_action = "{{check_action}}";
+  if (check_action === "get_req") {
     map = new OpenLayers.Map("mapdiv");
+    map.addLayer(new OpenLayers.Layer.OSM());
+    map.zoomToMaxExtent();
+}
+  else if(check_action === "dadata")
+  {map = new OpenLayers.Map("mapdiv");
     map.addLayer(new OpenLayers.Layer.OSM());
      var longitude = {{geo_lon}};
      latitude = {{geo_lat}};
-    var lonLat = new OpenLayers.LonLat( longitude, latitude )
+     var lonLat = new OpenLayers.LonLat( longitude, latitude )
           .transform(
             new OpenLayers.Projection("EPSG:4326"),
             map.getProjectionObject()
           );
-
     var zoom=16;
-
     var markers = new OpenLayers.Layer.Markers( "Markers" );
     map.addLayer(markers);
-
     markers.addMarker(new OpenLayers.Marker(lonLat));
+    map.setCenter (lonLat, zoom);}
 
+    else if (check_action === "points") {
+    map = new OpenLayers.Map("mapdiv");
+    map.addLayer(new OpenLayers.Layer.OSM());
+     var longitude = {{geo_lon}};
+     latitude = {{geo_lat}};
+     var lonLat = new OpenLayers.LonLat( longitude, latitude )
+          .transform(
+            new OpenLayers.Projection("EPSG:4326"),
+            map.getProjectionObject()
+          );
+    var zoom=6;
+    var markers = new OpenLayers.Layer.Markers( "Markers" );
+    map.addLayer(markers);
+    markers.addMarker(new OpenLayers.Marker(lonLat));
     map.setCenter (lonLat, zoom);
-  </script>
+    }
+var data= {{ coordinate_list |safe}}
+function addPointGeom(data) {
+        data.forEach(function(item){
+            var long = item[0];
+                lat = item[1];
+     var lonLat = new OpenLayers.LonLat( long, lat)
+          .transform(
+            new OpenLayers.Projection("EPSG:4326"),
+            map.getProjectionObject()
+          );
+    var zoom=16;
+    var markers = new OpenLayers.Layer.Markers("Markers");
+    map.addLayer(markers);
+    var marker = new OpenLayers.Marker(lonLat, new OpenLayers.Icon("https://maps.google.com/mapfiles/kml/paddle/purple-blank.png"));
+    markers.addMarker(marker);
+    marker.events.register("click", marker, function(evt) {
+    OpenLayers.Event.stop(evt); // Остановить всплытие события
+    if (map.popups.length){
+         map.removePopup(map.popups[0]);
+    }
+    var popup = new OpenLayers.Popup("popup",
+        lonLat,
+        new OpenLayers.Size(200, 100),
+        "Страна - " + item[2] +
+        "<br>Округ - " + item[3] +
+        "<br>Регион - " + item[4] +
+        "<br>Город - " + item[5] +
+        "<br>Год основания - " + item[6],
+        true); // Создать всплывающее окно
+    map.addPopup(popup); // Добавить всплывающее окно на карту
+});
+        });
+    }// End of function showStraits()
+    addPointGeom(data);
+
+</script>
 </body></html>

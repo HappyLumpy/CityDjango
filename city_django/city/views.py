@@ -1,41 +1,60 @@
+import yandex_geocoder
+from decouple import config
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import Distance
-from django.shortcuts import redirect, render
+from django.shortcuts import render
+from yandex_geocoder import Client
 from .forms import CityForm
-from dadata import Dadata
 from .models import City
 
-geo_lat = 0
-geo_lon = 0
+
+def geo_coding(address):
+    try:
+        yandex_geocoder_secret_key = config('YANDEX_GEOCODER_SECRET_KEY')
+        client = Client(yandex_geocoder_secret_key)
+        coordinates = client.coordinates(address)
+        return coordinates
+    except yandex_geocoder.exceptions.NothingFound:
+        return "Введенный адрес не найден"
 
 
 def dadata_geocoding(request):
-    global geo_lat
-    global geo_lon
     if request.method == 'GET':
-        return render(request, 'city/map.html')
+        return render(request, 'city/DaDataGeoCoding.html',
+                      {'check_action': "get_req", 'geo_lon': 0, 'geo_lat': 0})
     else:
         form = CityForm(request.POST)
-        if 'address' in form.data:
-            address = form.data['address']
-            token = "3cedaba82c441a2534982feaa9d3bec897cba648"
-            secret = "b7fe5de3e1e877f310bd21c02cabd5ba81dea71d"
-            dadata = Dadata(token, secret)
-            result = dadata.clean("address", address)
-            geo_lat = result["geo_lat"]
-            geo_lon = result["geo_lon"]
-            if geo_lon is None or geo_lat is None:
-                return render(request, 'city/map.html')
+        if form.data['address'] != "" and form.data['distance'] != "":
+            result = geo_coding(form.data['address'])
+            if type(result) is tuple:
+                geo_lat = result[1]
+                geo_lon = result[0]
+                city_list = []
+                radius = form.data['distance']
+                point = Point(float(geo_lon), float(geo_lat), srid=4326)
+                nearest_city = City.objects.filter(geom__distance_lt=(point, Distance(km=radius)))
+                for i in nearest_city:
+                    data = [i.geom.x, i.geom.y, i.country, i.federal_district, i.region, i.city, i.foundation_year]
+                    city_list.append(data)
+                return render(request, 'city/DaDataGeoCoding.html',
+                              {'check_action': "points", 'coordinate_list': city_list,
+                               'geo_lon': geo_lon, 'geo_lat': geo_lat})
             else:
-                return render(request, 'city/DaDataGeoCoding.html', {'geo_lon': geo_lon, 'geo_lat': geo_lat})
-        elif 'distance' in form.data:
-            city_list = []
-            radius = form.data['distance']
-            point = Point(float(geo_lon), float(geo_lat), srid=4326)
-            nearest_city = City.objects.filter(geom__distance_lt=(point, Distance(km=radius)))
-            for i in nearest_city:
-                coords = [i.geom.x, i.geom.y]
-                city_list.append(coords)
-            return render(request, 'city/Citys.html', {'coordinate_list': city_list})
+                return render(request, 'city/DaDataGeoCoding.html',
+                              {'check_action': "get_req", 'geo_lon': 0, 'geo_lat': 0, 'error': result})
+        elif form.data['address'] != "":
+            result = geo_coding(form.data['address'])
+            if type(result) is tuple:
+                geo_lat = result[1]
+                geo_lon = result[0]
+                if geo_lon is None or geo_lat is None:
+                    return render(request, 'city/DaDataGeoCoding.html')
+                else:
+                    return render(request, 'city/DaDataGeoCoding.html',
+                                  {'check_action': "dadata", 'geo_lon': geo_lon, 'geo_lat': geo_lat})
+            else:
+                return render(request, 'city/DaDataGeoCoding.html',
+                              {'check_action': "get_req", 'geo_lon': 0, 'geo_lat': 0, 'error': result})
         else:
-            return render(request, 'city/map.html')
+            return render(request, 'city/DaDataGeoCoding.html',
+                          {'check_action': "get_req", 'geo_lon': 0, 'geo_lat': 0})

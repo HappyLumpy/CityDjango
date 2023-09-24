@@ -15,13 +15,19 @@
     <p style="cursor: pointer; color: red" onclick="document.getElementById('er').style.display='none';" >{{ error }}</p>
     </div>
 </div>
-
                 </div>
                 {% endif %}
   <button type="submit" class="btn btn-primary">Готово</button>
     </form>
 <title>City</title>
   <div id="mapdiv" style="height:600px"></div>
+<style>
+.popup-style {
+  background-color: #5F9EA0;
+  padding: 10px;
+}
+
+</style>
   <script src="http://www.openlayers.org/api/OpenLayers.js"></script>
   <script>
   var check_action = "{{check_action}}";
@@ -75,26 +81,29 @@ function addPointGeom(data) {
     var zoom=16;
     var markers = new OpenLayers.Layer.Markers("Markers");
     map.addLayer(markers);
-    var marker = new OpenLayers.Marker(lonLat, new OpenLayers.Icon("https://maps.google.com/mapfiles/kml/paddle/purple-blank.png"));
+    var marker = new OpenLayers.Marker(lonLat, new OpenLayers.Icon("https://maps.google.com/mapfiles/kml/pal4/icon58.png"));
     markers.addMarker(marker);
     marker.events.register("click", marker, function(evt) {
-    OpenLayers.Event.stop(evt); // Остановить всплытие события
+    OpenLayers.Event.stop(evt);
     if (map.popups.length){
          map.removePopup(map.popups[0]);
     }
     var popup = new OpenLayers.Popup("popup",
         lonLat,
-        new OpenLayers.Size(200, 100),
+        null,
         "Страна - " + item[2] +
         "<br>Округ - " + item[3] +
         "<br>Регион - " + item[4] +
         "<br>Город - " + item[5] +
         "<br>Год основания - " + item[6],
-        true); // Создать всплывающее окно
-    map.addPopup(popup); // Добавить всплывающее окно на карту
+        null,
+        true);
+    popup.autoSize = true;
+    popup.contentDiv.className = "popup-style";
+    map.addPopup(popup);
 });
         });
-    }// End of function showStraits()
+    }
     addPointGeom(data);
 
 </script>
